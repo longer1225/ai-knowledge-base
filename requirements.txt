@@ -1,0 +1,29 @@
+python-docx==0.8.11
+langchain==0.1.10
+sentence-transformers==2.2.2
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.2
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+streamlit==1.30.0
+pandas==2.1.4
+tqdm==4.66.1
+dashscope==1.14.0
+
+# LangChain 核心
+langchain>=0.1.10
+langchain-community>=0.0.26
+langchain-huggingface>=0.0.3
+
+# 向量存储（适配 GaussDB/PostgreSQL）
+pgvector>=0.2.5
+psycopg2-binary>=2.9.9
+
+# 嵌入模型
+sentence-transformers>=2.2.2
+transformers>=4.38.2
+
+# 其他
+python-dotenv>=1.0.1
+numpy>=1.26.4

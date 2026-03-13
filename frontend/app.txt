@@ -1,0 +1,219 @@
+import streamlit as st
+import requests
+from datetime import datetime
+
+# ---------------------- 页面基础配置 ----------------------
+# 必须放在最开头
+st.set_page_config(page_title="AI知识库", page_icon="🤖", layout="wide", initial_sidebar_state="expanded")
+
+# ---------------------- 全局配置 & 状态初始化 ----------------------
+API_BASE_URL = "http://127.0.0.1:8000"
+
+if "docs" not in st.session_state:
+    st.session_state.docs = []
+if "qa_history" not in st.session_state:
+    st.session_state.qa_history = []
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "智能问答"
+
+# ---------------------- 核心 CSS (深度定制 ChatGPT 深色主题) ----------------------
+st.markdown("""
+    <style>
+    /* 全局深色背景 */
+    .stApp, .main {
+        background-color: #212121 !important;
+        color: #ECECEC !important;
+    }
+
+    /* 侧边栏样式 */
+    [data-testid="stSidebar"] {
+        background-color: #171717 !important;
+        border-right: none !important;
+    }
+
+    /* 隐藏默认的顶部Header和底部Footer */
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    /* 侧边栏按钮样式 (模拟导航) */
+    div[data-testid="stSidebarNav"] {display: none;} /* 隐藏默认导航 */
+    .sidebar-btn-container button {
+        width: 100%;
+        background-color: transparent !important;
+        border: none !important;
+        color: #ECECEC !important;
+        text-align: left !important;
+        padding: 10px 15px !important;
+        border-radius: 8px !important;
+        font-size: 14px !important;
+        transition: background-color 0.2s;
+    }
+    .sidebar-btn-container button:hover {
+        background-color: #2F2F2F !important;
+    }
+
+    /* 居中欢迎语样式 */
+    .welcome-title {
+        color: #FFFFFF;
+        font-size: 32px;
+        font-weight: 500;
+        text-align: center;
+        margin-top: 25vh; /* 垂直居中 */
+        margin-bottom: 40px;
+    }
+
+    /* 聊天气泡样式覆盖 */
+    [data-testid="stChatMessage"] {
+        background-color: transparent !important;
+        border: none !important;
+        padding: 1.5rem !important;
+    }
+    [data-testid="stChatMessage"]:nth-child(even) {
+        background-color: rgba(255,255,255,0.02) !important; /* AI回复稍微不同 */
+    }
+
+    /* 底部输入框样式定制 */
+    [data-testid="stChatInput"] {
+        background-color: #2F2F2F !important;
+        border: 1px solid #424242 !important;
+        border-radius: 20px !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        color: white !important;
+    }
+
+    /* 卡片和文件上传区样式 */
+    .dark-card {
+        background-color: #2F2F2F;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border: 1px solid #424242;
+    }
+    .stFileUploader > div > div {
+        background-color: #2F2F2F !important;
+        border: 1px dashed #555 !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+# ---------------------- 工具函数 ----------------------
+#用来发送http请求
+def request_api(url, method="GET", data=None, files=None):
+    try:
+        if method == "GET":
+            res = requests.get(url, params=data, timeout=30)
+        else:
+            if files:
+                res = requests.post(url, files=files, timeout=60)
+            else:
+                res = requests.post(url, json=data, timeout=30)
+        return res.json() if res.status_code == 200 else None
+    except requests.exceptions.ConnectionError:
+        st.error("❌ 后端服务未启动，请先运行 FastAPI 后端！")
+    except Exception as e:
+        st.error(f"❌ 请求错误：{str(e)}")
+    return None
+
+
+# ---------------------- 侧边栏导航 ----------------------
+def render_sidebar():
+    with st.sidebar:
+        st.markdown(
+            "<h3 style='color: white; margin-bottom: 20px; padding-left: 10px;'>ChatGPT <span style='font-size:14px;color:#888'>v</span></h3>",
+            unsafe_allow_html=True)
+
+        # 使用自定义样式的按钮作为导航
+        st.markdown('<div class="sidebar-btn-container">', unsafe_allow_html=True)
+
+        if st.button("💬 新聊天 (智能问答)", use_container_width=True):
+            st.session_state.current_page = "智能问答"
+            st.rerun()
+
+        if st.button("📤 文档上传与解析", use_container_width=True):
+            st.session_state.current_page = "文档上传"
+            st.rerun()
+
+        if st.button("📖 知识库管理与设置", use_container_width=True):
+            st.session_state.current_page = "知识库管理"
+            st.rerun()
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.divider()
+        st.markdown("<p style='color: #888; font-size: 12px; padding-left:10px;'>当前知识库文档数: {}</p>".format(
+            len(st.session_state.docs)), unsafe_allow_html=True)
+
+
+# ---------------------- 页面: 智能问答 (核心聊天页) ----------------------
+
+# ---------------------- 页面: 文档上传 ----------------------
+def render_upload():
+    st.markdown("<h2 style='color: white; margin-bottom: 20px;'>📤 文档上传</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #aaa;'>支持 docx / txt 格式，单次限传1个（≤10MB）</p>", unsafe_allow_html=True)
+
+    file = st.file_uploader("选择文件", type=["docx", "txt"], label_visibility="collapsed")
+    if file:
+        if st.button("开始上传与处理", type="primary"):
+            with st.spinner("上传并处理文档中，请稍候..."):
+                files = {"file": (file.name, file, file.type)}
+                res = request_api(f"{API_BASE_URL}/api/upload", "POST", files=files)
+                if res and res.get("code") == 0:
+                    st.session_state.docs.append({
+                        "id": res["data"]["doc_id"],
+                        "name": file.name,
+                        "size": file.size,
+                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    })
+                    st.success(f"✅ {file.name} 上传成功！")
+                elif res:
+                    st.error(res["msg"])
+
+
+# ---------------------- 页面: 知识库管理 ----------------------
+def render_manage():
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("<h2 style='color: white;'>📖 知识库管理</h2>", unsafe_allow_html=True)
+    with col2:
+        if st.button("🗑️ 清空所有对话历史", use_container_width=True):
+            st.session_state.qa_history = []
+            st.toast("对话历史已清空")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if st.session_state.docs:
+        for doc in st.session_state.docs:
+            st.markdown(f"""
+                <div class="dark-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="margin:0; color:#ECECEC;">📄 {doc['name']}</h4>
+                            <p style="margin:5px 0 0 0; color:#888; font-size:14px;">
+                                大小: {doc['size']} B &nbsp;|&nbsp; 上传时间: {doc['time']}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            # 删除按钮需要独立渲染以保持交互性
+            if st.button("删除此文档", key=f"del_{doc['id']}"):
+                st.session_state.docs.remove(doc)
+                st.rerun()
+    else:
+        st.info("当前知识库为空，请前往「文档上传」页面添加文档。")
+
+
+# ---------------------- 主程序路由 ----------------------
+if __name__ == "__main__":
+    # 渲染侧边栏
+    render_sidebar()
+
+    # 渲染主区域内容
+    if st.session_state.current_page == "智能问答":
+        render_qa()
+    elif st.session_state.current_page == "文档上传":
+        render_upload()
+    elif st.session_state.current_page == "知识库管理":
+        render_manage()

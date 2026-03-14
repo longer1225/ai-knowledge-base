@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.api_client import request_api
+import utils.api_client
 from datetime import datetime
 
 def render():

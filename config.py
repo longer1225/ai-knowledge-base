@@ -23,6 +23,16 @@ def load_css():
     """加载CSS（保留你的原有样式，新增登录表单样式）"""
     st.markdown("""
         <style>
+        
+        /* 修复 Primary 主要按钮（登录/注册按钮）白底白字的问题，强制让里面的字变成黑色 */
+    button[kind="primary"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #FFFFFF !important;
+    }
+    button[kind="primary"] * {
+        color: #000000 !important; 
+        font-weight: bold !important;
+    }
     /* 你的原有CSS（完全保留） */
     .stApp, .main {
         background-color: #212121 !important;

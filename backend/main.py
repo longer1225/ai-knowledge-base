@@ -1,8 +1,24 @@
 # backend/main.py
-import uvicorn
-from settings import API_BASE_URL
+from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 
-if __name__ == "__main__":
-    port = int(API_BASE_URL.split(":")[-1])
-    # 这里指向 api/__init__.py 里的 app
-    uvicorn.run("backend.api:app", host="0.0.0.0", port=port, reload=True)
+from backend.api import user_api, upload_api, qa_api, history_api
+
+app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 挂载所有 API 路由（这一行非常关键）
+app.include_router(user_api.router)
+
+
+@app.get("/")
+def root():
+    return {"message": "AI 知识库后端运行正常"}

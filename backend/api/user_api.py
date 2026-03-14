@@ -1,64 +1,58 @@
-# backend/api/user_api.py
-import requests
-from config import API_BASE_URL  # 复用你的全局配置
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from backend.service.user_service import create_user, authenticate_user
+from datetime import datetime, timedelta
+from jose import jwt
+from settings import SECRET_KEY, ALGORITHM
+
+router = APIRouter(prefix="/api/user", tags=["用户管理"])
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-def login(username: str, password: str) -> tuple[bool, str, str]:
-    """
-    后端登录接口实现（前端调用版）
-    返回：(是否成功, token/错误信息, 用户名/空)
-    """
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+@router.post("/register")
+def register(user: UserCreate):
     try:
-        # 这里是前端调用后端接口的逻辑（如果是前后端分离）
-        # 如果是单体应用，直接调用service层：
-        # from backend.service.user_service import user_login
-        # return user_login(username, password)
-
-        # 前后端分离版示例：
-        response = requests.post(
-            f"{API_BASE_URL}/api/user/login",
-            json={"username": username, "password": password}
-        )
-        if response.status_code == 200:
-            data = response.json()
-            return True, data.get("token", ""), data.get("username", "")
-        return False, f"登录失败：{response.text}", ""
+        create_user(user.username, user.password)
+        return {"code": 200, "msg": "注册成功"}
+    except HTTPException as e:
+        return {"code": e.status_code, "msg": e.detail}
     except Exception as e:
-        return False, f"接口调用失败：{str(e)}", ""
+        return {"code": 500, "msg": f"注册失败：{str(e)}"}
 
 
-def register(username: str, password: str) -> tuple[bool, str]:
-    """
-    后端注册接口实现（前端调用版）
-    """
-    try:
-        # 前后端分离版：
-        response = requests.post(
-            f"{API_BASE_URL}/api/user/register",
-            json={"username": username, "password": password}
-        )
-        if response.status_code == 201:
-            return True, ""
-        return False, f"注册失败：{response.text}"
-    except Exception as e:
-        return False, f"接口调用失败：{str(e)}"
+@router.post("/login")
+def login(user: UserLogin):
+    user_db = authenticate_user(user.username, user.password)
+    if not user_db:
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
 
-# 如果你需要FastAPI后端接口（供前端调用），补充：
-# from fastapi import APIRouter
-# router = APIRouter(prefix="/api/user", tags=["用户"])
-
-# @router.post("/login")
-# def api_login(username: str, password: str):
-#     from backend.service.user_service import user_login
-#     success, token, username = user_login(username, password)
-#     if success:
-#         return {"code": 200, "token": token, "username": username}
-#     return {"code": 400, "msg": token}
-
-# @router.post("/register")
-# def api_register(username: str, password: str):
-#     from backend.service.user_service import user_register
-#     success, msg = user_register(username, password)
-#     if success:
-#         return {"code": 201, "msg": "注册成功"}
-#     return {"code": 400, "msg": msg}
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user_db.username, "user_id": user_db.user_id},
+        expires_delta=access_token_expires
+    )
+    return {
+        "code": 200,
+        "access_token": access_token,
+        "token_type": "bearer",
+        "username": user_db.username,
+        "user_id": user_db.user_id
+    }

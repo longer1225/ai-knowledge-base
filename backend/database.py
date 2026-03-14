@@ -9,7 +9,7 @@ engine = create_engine(DB_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# 你定义的：get_db()
+# 给 FastAPI 依赖用
 def get_db():
     db = SessionLocal()
     try:

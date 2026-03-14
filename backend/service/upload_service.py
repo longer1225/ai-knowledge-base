@@ -3,8 +3,8 @@ import tempfile
 from sqlalchemy.orm import Session
 from fastapi import UploadFile
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import PGVector
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import PGVector
 
 from ..models import Document
 from settings import GAUSSDB_CONFIG, EMBEDDING_MODEL, TEXT_SPLIT_CONFIG

@@ -7,6 +7,8 @@ def render():
     st.markdown("<p style='color: #aaa;'>支持 docx / txt 格式，单次限传1个（≤10MB）</p>", unsafe_allow_html=True)
 
     file = st.file_uploader("选择文件", type=["docx", "txt"], label_visibility="collapsed")
+"""
+
     if file:
         if st.button("开始上传与处理", type="primary"):
             with st.spinner("上传并处理文档中，请稍候..."):
@@ -22,3 +24,5 @@ def render():
                     st.success(f"✅ {file.name} 上传成功！")
                 elif res:
                     st.error(res["msg"])
+                    
+"""

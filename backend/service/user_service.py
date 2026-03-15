@@ -2,11 +2,17 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from backend.mapper.user_mapper import get_user_by_username, create_mapper_user
 from fastapi import HTTPException
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # 密码加密
+
+# 密码加密
 def get_password_hash(password: str) -> str:
+    password = password[:72]   # ⭐ bcrypt最大72字节
     return pwd_context.hash(password)
 
 # 验证密码
@@ -23,11 +29,22 @@ def authenticate_user(username: str, password: str):
     return user
 
 # 注册逻辑
-def create_user(username: str, password: str):
-    exists = get_user_by_username(username)
-    if exists:
-        raise HTTPException(status_code=400, detail="用户名已存在")
+# 注册逻辑
+import traceback
 
-    hashed_pwd = get_password_hash(password)
-    new_user = create_mapper_user(username, hashed_pwd)
-    return new_user
+def create_user(username: str, password: str):
+    try:
+
+        exists = get_user_by_username(username)
+        if exists:
+            raise HTTPException(status_code=400, detail="用户名已存在")
+
+        hashed_pwd = get_password_hash(password)
+
+        new_user = create_mapper_user(username, hashed_pwd)
+
+        return new_user
+
+    except Exception as e:
+        traceback.print_exc()   # ⭐ 打印真实错误
+        raise e

@@ -1,5 +1,4 @@
 import streamlit as st
-from utils.api_client import qa_chat
 
 def render():
     # 1. 渲染历史对话 (如果你没有历史记录，就会显示那句经典的提示语)

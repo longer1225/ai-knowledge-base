@@ -4,6 +4,9 @@ import requests
 API_BASE_URL = "http://127.0.0.1:8000"
 
 
+# =========================
+# 登录页面
+# =========================
 def render_login_page():
     _, center_col, _ = st.columns([1, 1.5, 1])
 
@@ -30,13 +33,18 @@ def render_login_page():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        if st.button("登录", use_container_width=True, type="primary"):
+        # 登录按钮
+        if st.button("登录", use_container_width=True, type="primary", key="login_btn"):
+
+            st.write("登录按钮被点击")
 
             if not username or not password:
                 st.warning("请输入用户名和密码")
                 return
 
             try:
+                st.write("准备发送登录请求")
+
                 response = requests.post(
                     f"{API_BASE_URL}/api/user/login",
                     json={
@@ -44,6 +52,10 @@ def render_login_page():
                         "password": password
                     }
                 )
+
+                st.write("请求发送完成")
+                st.write("状态码:", response.status_code)
+                st.write("返回:", response.text)
 
                 data = response.json()
 
@@ -63,11 +75,15 @@ def render_login_page():
             except Exception as e:
                 st.error(f"请求失败: {str(e)}")
 
-        if st.button("还没有账号？立即注册", use_container_width=True):
+        # 跳转注册
+        if st.button("还没有账号？立即注册", use_container_width=True, key="goto_register"):
             st.session_state.current_page = "注册"
             st.rerun()
 
 
+# =========================
+# 注册页面
+# =========================
 def render_register_page():
     _, center_col, _ = st.columns([1, 1.5, 1])
 
@@ -102,17 +118,23 @@ def render_register_page():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        if st.button("注册", use_container_width=True, type="primary"):
+        # 注册按钮
+        if st.button("注册", use_container_width=True, type="primary", key="register_btn"):
+
+            st.write("注册按钮被点击")
 
             if not username or not password:
                 st.warning("请输入完整信息")
                 return
 
             if password != repassword:
-                st.error("两次密码不一致！")
+                st.error("两次密码不一致")
                 return
 
             try:
+
+                st.write("准备发送注册请求")
+
                 response = requests.post(
                     f"{API_BASE_URL}/api/user/register",
                     json={
@@ -120,6 +142,10 @@ def render_register_page():
                         "password": password
                     }
                 )
+
+                st.write("请求发送完成")
+                st.write("状态码:", response.status_code)
+                st.write("返回:", response.text)
 
                 data = response.json()
 
@@ -132,9 +158,13 @@ def render_register_page():
                 else:
                     st.error(data["msg"])
 
+            except requests.exceptions.ConnectionError:
+                st.error("连接后端失败，请确认 FastAPI 在 8000 端口运行")
+
             except Exception as e:
                 st.error(f"请求失败: {str(e)}")
 
-        if st.button("返回登录", use_container_width=True):
+        # 返回登录
+        if st.button("返回登录", use_container_width=True, key="goto_login"):
             st.session_state.current_page = "登录"
             st.rerun()

@@ -7,7 +7,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import PGVector
 
 from ..models import Document
-from settings import GAUSSDB_CONFIG, EMBEDDING_MODEL, TEXT_SPLIT_CONFIG
+from settings import DB_CONFIG, EMBEDDING_MODEL, TEXT_SPLIT_CONFIG
 
 embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 text_splitter = RecursiveCharacterTextSplitter(
@@ -15,7 +15,7 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_overlap=TEXT_SPLIT_CONFIG["chunk_overlap"],
 )
 
-CONNECTION_STRING = f"postgresql+psycopg2://{GAUSSDB_CONFIG['user']}:{GAUSSDB_CONFIG['password']}@{GAUSSDB_CONFIG['host']}:{GAUSSDB_CONFIG['port']}/{GAUSSDB_CONFIG['database']}"
+CONNECTION_STRING = f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
 
 def get_vector_store():
     return PGVector(

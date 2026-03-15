@@ -1,15 +1,32 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from settings import GAUSSDB_CONFIG
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.engine import URL
+from settings import DB_CONFIG
 
-DB_URL = f"postgresql+psycopg2://{GAUSSDB_CONFIG['user']}:{GAUSSDB_CONFIG['password']}@{GAUSSDB_CONFIG['host']}:{GAUSSDB_CONFIG['port']}/{GAUSSDB_CONFIG['database']}"
+DATABASE_URL = URL.create(
+    "postgresql+psycopg2",
+    username=DB_CONFIG["user"],
+    password=DB_CONFIG["password"],
+    host=DB_CONFIG["host"],
+    port=DB_CONFIG["port"],
+    database=DB_CONFIG["database"]
+)
 
-engine = create_engine(DB_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+engine = create_engine(
+    DATABASE_URL,
+    client_encoding="utf8"
+)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
 Base = declarative_base()
 
-# 给 FastAPI 依赖用
+
 def get_db():
     db = SessionLocal()
     try:
@@ -17,6 +34,6 @@ def get_db():
     finally:
         db.close()
 
-# 你定义的：close_db()
+
 def close_db(db):
     db.close()

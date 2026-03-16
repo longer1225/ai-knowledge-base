@@ -1,9 +1,6 @@
 # config.py（在原有基础上新增/修改）
 import streamlit as st
 
-# 后端API地址（统一配置）
-API_BASE_URL = "http://127.0.0.1:8000"
-
 def init_session_state():
     """初始化Session State（补充登录相关字段）"""
     # 保留你原有初始化逻辑，新增登录字段

@@ -1,12 +1,12 @@
 import os
 import tempfile
-from sqlalchemy.orm import Session
 from fastapi import UploadFile, HTTPException
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from ..models import Document, DocumentChunk
+from ..models import DocumentChunk
 from ..embedding.factory import EmbeddingFactory
 from settings import TEXT_SPLIT_CONFIG, EMBEDDING_CONFIG
+from backend.mapper.upload_mapper import insert_document, batch_insert_chunks
 
 # 分块器
 text_splitter = RecursiveCharacterTextSplitter(
@@ -15,17 +15,18 @@ text_splitter = RecursiveCharacterTextSplitter(
     separators=["\n\n", "\n", "。", "！", "？"]
 )
 
-# 模型（mock 轻量版，不占内存）
+# 向量模型
 embedding = EmbeddingFactory.get(**EMBEDDING_CONFIG)
 
-async def upload_document(file: UploadFile, user_id: int, db: Session):
+# ============================
+# ✅ 绝对无 db 参数！
+# ============================
+async def upload_document(file: UploadFile, user_id: int):
     suffix = os.path.splitext(file.filename)[-1].lower()
 
-    # ↓↓↓ 这里会导致 400，必须严格校验
     if suffix not in [".txt", ".docx"]:
         raise HTTPException(status_code=400, detail="仅支持 .txt 或 .docx 文件")
 
-    # 临时文件（修复笔误）
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
@@ -40,39 +41,35 @@ async def upload_document(file: UploadFile, user_id: int, db: Session):
             doc = DocxDocument(tmp_path)
             content = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
 
-        # 空内容直接报 400
-        if not content or len(content.strip()) == 0:
+        if not content.strip():
             raise HTTPException(status_code=400, detail="文件内容不能为空")
 
-        # 分块
+        # 文本分块
         chunks = text_splitter.split_text(content)
 
-        # 存文档
-        doc = Document(
+        # ============================
+        # Mapper 操作（无 db！）
+        # ============================
+        doc = insert_document(
             user_id=user_id,
             doc_name=file.filename,
             doc_type=suffix[1:],
-            file_size=os.path.getsize(tmp_path),
-            status="processed"
+            file_size=os.path.getsize(tmp_path)
         )
-        db.add(doc)
-        db.flush()
-        doc_id = doc.doc_id
 
-        # 存分块 + 向量
         chunk_items = []
         for idx, text in enumerate(chunks):
             vec = embedding.embed(text)
             chunk_items.append(DocumentChunk(
-                doc_id=doc_id,
+                doc_id=doc.doc_id,
                 chunk_text=text,
                 chunk_embedding=vec,
                 chunk_index=idx
             ))
 
-        db.add_all(chunk_items)
-        db.commit()
-        return doc_id
+        batch_insert_chunks(chunk_items)
+
+        return doc.doc_id
 
     finally:
         if os.path.exists(tmp_path):

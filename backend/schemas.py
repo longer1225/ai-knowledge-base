@@ -1,10 +1,12 @@
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional
 
+# 请求模型
 class QAQuery(BaseModel):
     question: str
 
+# 响应模型
 class ApiResponse(BaseModel):
     code: int
-    msg: str = "成功"
-    data: Optional[Dict] = None
+    data: Optional[dict] = None
+    msg: Optional[str] = None

@@ -26,3 +26,10 @@ EMBEDDING_CONFIG = {
     "dimension": 384,
     # "api_key": "xxx",        # 未来在线模型用
 }
+
+# settings.py
+
+# 环境配置：专业开发标准！
+# dev  = 开发模式（不调用LLM，不花钱，适合调试）
+# prod = 生产模式（正式运行，调用LLM）
+ENV_MODE = "dev"  # 你只改这里！全局生效！

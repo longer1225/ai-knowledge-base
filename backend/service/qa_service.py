@@ -3,8 +3,8 @@ from langchain.chains import RetrievalQA
 from langchain.llms.base import LLM
 
 from ..models import QAHistory
-from .upload_service import get_vector_store
-
+# from .upload_service import get_vector_store
+"""
 class MockLLM(LLM):
     def _call(self, prompt: str, stop=None):
         return f"【LangChain 生成回答】\n根据知识库内容：\n{prompt[:300]}..."
@@ -35,3 +35,4 @@ def ask_question(question: str, db: Session):
 
     source_text = "\n\n----------------\n\n".join([d.page_content for d in source_docs])
     return answer, source_text
+"""

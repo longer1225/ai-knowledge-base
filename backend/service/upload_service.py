@@ -1,54 +1,79 @@
 import os
 import tempfile
 from sqlalchemy.orm import Session
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import PGVector
 
-from ..models import Document
-from settings import DB_CONFIG, EMBEDDING_MODEL, TEXT_SPLIT_CONFIG
+from ..models import Document, DocumentChunk
+from ..embedding.factory import EmbeddingFactory
+from settings import TEXT_SPLIT_CONFIG, EMBEDDING_CONFIG
 
-embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+# 分块器
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=TEXT_SPLIT_CONFIG["chunk_size"],
     chunk_overlap=TEXT_SPLIT_CONFIG["chunk_overlap"],
+    separators=["\n\n", "\n", "。", "！", "？"]
 )
 
-CONNECTION_STRING = f"postgresql+psycopg2://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}"
+# 模型（mock 轻量版，不占内存）
+embedding = EmbeddingFactory.get(**EMBEDDING_CONFIG)
 
-def get_vector_store():
-    return PGVector(
-        connection_string=CONNECTION_STRING,
-        embedding_function=embeddings,
-        collection_name="document_chunks",
-    )
+async def upload_document(file: UploadFile, user_id: int, db: Session):
+    suffix = os.path.splitext(file.filename)[-1].lower()
 
-async def upload_document(file: UploadFile, db: Session):
-    suffix = os.path.splitext(file.filename)[-1]
+    # ↓↓↓ 这里会导致 400，必须严格校验
+    if suffix not in [".txt", ".docx"]:
+        raise HTTPException(status_code=400, detail="仅支持 .txt 或 .docx 文件")
+
+    # 临时文件（修复笔误）
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
 
     try:
-        if tmp_path.endswith(".txt"):
+        # 读取文件
+        if suffix == ".txt":
             with open(tmp_path, "r", encoding="utf-8") as f:
                 content = f.read()
-        elif tmp_path.endswith(".docx"):
-            from docx import Document
-            doc = Document(tmp_path)
-            content = "\n".join([p.text for p in doc.paragraphs])
         else:
-            content = ""
-    except:
-        content = ""
+            from docx import Document as DocxDocument
+            doc = DocxDocument(tmp_path)
+            content = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
 
-    chunks = text_splitter.split_text(content)
-    vs = get_vector_store()
-    vs.add_texts(chunks)
+        # 空内容直接报 400
+        if not content or len(content.strip()) == 0:
+            raise HTTPException(status_code=400, detail="文件内容不能为空")
 
-    doc = Document(name=file.filename, size=os.path.getsize(tmp_path))
-    db.add(doc)
-    db.commit()
-    os.unlink(tmp_path)
-    return doc.id
+        # 分块
+        chunks = text_splitter.split_text(content)
+
+        # 存文档
+        doc = Document(
+            user_id=user_id,
+            doc_name=file.filename,
+            doc_type=suffix[1:],
+            file_size=os.path.getsize(tmp_path),
+            status="processed"
+        )
+        db.add(doc)
+        db.flush()
+        doc_id = doc.doc_id
+
+        # 存分块 + 向量
+        chunk_items = []
+        for idx, text in enumerate(chunks):
+            vec = embedding.embed(text)
+            chunk_items.append(DocumentChunk(
+                doc_id=doc_id,
+                chunk_text=text,
+                chunk_embedding=vec,
+                chunk_index=idx
+            ))
+
+        db.add_all(chunk_items)
+        db.commit()
+        return doc_id
+
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)

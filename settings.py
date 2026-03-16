@@ -16,9 +16,13 @@ TEXT_SPLIT_CONFIG = {
     "chunk_overlap": 50
 }
 
-# JWT配置
-SECRET_KEY = "your-secret-key-keep-it-safe"
+# 随便写一串密钥就行
+SECRET_KEY = "1234567890abcdefghijklmnopqrstuvwxyz"
 ALGORITHM = "HS256"
-
 # 向量模型
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+# 嵌入模型配置（切换模型只改这里！）
+EMBEDDING_CONFIG = {
+    "model_type": "mock",    # 👈 就改这一行！
+    "dimension": 384,
+    # "api_key": "xxx",        # 未来在线模型用
+}

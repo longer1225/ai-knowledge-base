@@ -30,6 +30,7 @@ def get_documents(authorization: str = Header(None)):
     return ApiResponse(code=0, data=docs)
 
 # 删除文档
+# manage_api.py 优化后
 @router.delete("/api/manage/{doc_id}", response_model=ApiResponse)
 def delete_document(doc_id: int, authorization: str = Header(None)):
     if not authorization:
@@ -42,5 +43,9 @@ def delete_document(doc_id: int, authorization: str = Header(None)):
     except:
         raise HTTPException(status_code=401, detail="token无效")
 
-    delete_user_document(doc_id, user_id)
-    return ApiResponse(code=0, msg="删除成功")
+    try:
+        delete_user_document(doc_id, user_id)
+        return ApiResponse(code=0, msg="删除成功")
+    except ValueError as e:
+        # 捕获Service层的异常，返回400错误
+        raise HTTPException(status_code=400, detail=str(e))

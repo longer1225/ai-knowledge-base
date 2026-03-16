@@ -14,6 +14,10 @@ def get_user_documents(user_id: int):
         for d in docs
     ]
 
-# 删除文档
+# manage_service.py 优化后
 def delete_user_document(doc_id: int, user_id: int):
-    return delete_document(doc_id, user_id)
+    # 接收Mapper的返回值，判断是否删除成功
+    is_deleted = delete_document(doc_id, user_id)
+    if not is_deleted:
+        raise ValueError("文档不存在或无权限删除")
+    return is_deleted

@@ -20,7 +20,7 @@ def render():
 
                     try:
                         res = requests.post(
-                            url="http://localhost:8000/api/upload",
+                            url="http://localhost:8001/api/upload",
                             headers=headers,
                             files=files
                         )

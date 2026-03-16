@@ -6,7 +6,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from ..models import DocumentChunk
 from ..embedding.factory import EmbeddingFactory
 from settings import TEXT_SPLIT_CONFIG, EMBEDDING_CONFIG
-from backend.mapper.upload_mapper import insert_document, batch_insert_chunks
+from backend.mapper.document_mapper import insert_document, batch_insert_chunks
 
 # 分块器
 text_splitter = RecursiveCharacterTextSplitter(
@@ -19,16 +19,17 @@ text_splitter = RecursiveCharacterTextSplitter(
 embedding = EmbeddingFactory.get(**EMBEDDING_CONFIG)
 
 # ============================
-# ✅ 绝对无 db 参数！
+# ✅ 修复：改成同步函数！！！（最重要的一行）
 # ============================
-async def upload_document(file: UploadFile, user_id: int):
+def upload_document(file: UploadFile, user_id: int):
     suffix = os.path.splitext(file.filename)[-1].lower()
 
     if suffix not in [".txt", ".docx"]:
         raise HTTPException(status_code=400, detail="仅支持 .txt 或 .docx 文件")
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(await file.read())
+        # 同步读取文件
+        tmp.write(file.file.read())
         tmp_path = tmp.name
 
     try:
@@ -47,9 +48,7 @@ async def upload_document(file: UploadFile, user_id: int):
         # 文本分块
         chunks = text_splitter.split_text(content)
 
-        # ============================
-        # Mapper 操作（无 db！）
-        # ============================
+        # 插入文档
         doc = insert_document(
             user_id=user_id,
             doc_name=file.filename,

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from backend.api import user_api, upload_api, qa_api
+from backend.api import user_api, upload_api, qa_api, manage_api
 # 👇 这行是你现在的正确路径
 from backend.interceptor.auth_interceptor import auth_interceptor
 
@@ -24,6 +24,7 @@ app.include_router(user_api.router)
 app.include_router(upload_api.router)
 app.include_router(qa_api.router)
 
+app.include_router(manage_api.router)
 
 @app.get("/")
 def root():

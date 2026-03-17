@@ -1,4 +1,4 @@
-# config.py（在原有基础上新增/修改）
+# frontend_config.py（在原有基础上新增/修改）
 import streamlit as st
 
 def init_session_state():

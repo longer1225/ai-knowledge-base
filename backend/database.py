@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.engine import URL
-from settings import DB_CONFIG
+from config.backend_base_settings import DB_CONFIG
 
 DATABASE_URL = URL.create(
     "postgresql+psycopg2",

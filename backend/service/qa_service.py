@@ -1,26 +1,28 @@
-# backend/service/qa_service.py
 import numpy as np
 import json
-
 from backend.embedding.factory import EmbeddingFactory
-from settings import EMBEDDING_CONFIG, ENV_MODE  # 引入环境配置
+# ✅ 改用新配置
+from config.backend_base_settings import EMBEDDING_CONFIG, ENV_MODE
 from backend.mapper.qa_mapper import list_all_document_chunks, insert_qa_history
+from utils.logger import logger
+from backend.exceptions import ParamException
 
 embedding = EmbeddingFactory.get(**EMBEDDING_CONFIG)
 
 def ask_question(question: str, user_id: int):
-    # ===============================
-    # ✅ 自动判断：开发环境直接返回，不调用模型
-    # ===============================
+    if not question or not question.strip():
+        raise ParamException("问题不能为空")
+
+    logger.debug(f"[Service] 用户 {user_id} 提问：{question}")
+
+    # 开发环境直接返回
     if ENV_MODE == "dev":
         answer = "⚠️【开发模式】模型未加载，仅用于接口测试"
         source = ""
         insert_qa_history(user_id, question, answer, source, "")
         return answer, source
 
-    # ===============================
-    # ✅ 生产环境：正式走知识库 + 模型逻辑
-    # ===============================
+    # 生产环境逻辑
     query_emb = embedding.embed(question)
     chunks = list_all_document_chunks()
 
@@ -46,7 +48,7 @@ def ask_question(question: str, user_id: int):
         question=question,
         answer=answer,
         source_chunks=source,
-        similarity_scores=json.dumps([s for _,s in top_chunks])
+        similarity_scores=json.dumps([s for _, s in top_chunks])
     )
 
     return answer, source

@@ -2,11 +2,17 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from backend.api import user_api, upload_api, qa_api, manage_api, history_api
 from backend.interceptor.auth_interceptor import auth_interceptor
-# ✅ 导入settings配置
-from settings import BACKEND_CONFIG
+from backend.interceptor.exception_handler import global_exception_handler
 
-app = FastAPI()
+# ✅ 统一使用新配置
+from config.backend_base_settings import BACKEND_CONFIG
 
+app = FastAPI(title="AI 知识库后端", version="1.0")
+
+# 全局异常捕获（你写的全局异常处理器）
+app.add_exception_handler(Exception, global_exception_handler)
+
+# CORS 跨域
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,23 +26,24 @@ app.add_middleware(
 async def apply_auth(request, call_next):
     return await auth_interceptor(request, call_next)
 
-# 挂载路由
+# 挂载所有路由
 app.include_router(user_api.router)
 app.include_router(upload_api.router)
 app.include_router(qa_api.router)
 app.include_router(history_api.router)
 app.include_router(manage_api.router)
 
+# 健康检查
 @app.get("/")
 def root():
-    return {"message": "AI 知识库后端运行正常"}
+    return {"message": "AI 知识库后端运行正常 ✅"}
 
+# 启动
 import uvicorn
 if __name__ == '__main__':
-    # ✅ 从配置文件读取，不再硬编码
     uvicorn.run(
         "main:app",
         host=BACKEND_CONFIG["host"],
         port=BACKEND_CONFIG["port"],
-        reload=BACKEND_CONFIG["reload"]
+        reload=BACKEND_CONFIG.get("reload", True)  # 👈 自动兼容，不报错
     )

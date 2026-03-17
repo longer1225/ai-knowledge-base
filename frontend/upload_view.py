@@ -1,8 +1,7 @@
 import streamlit as st
 import requests
 from datetime import datetime
-
-from settings import API_BASE_URL
+from config.backend_base_settings import API_BASE_URL
 
 
 def render():
@@ -12,13 +11,11 @@ def render():
     file = st.file_uploader("选择文件", type=["docx", "txt"], label_visibility="collapsed")
 
     if file:
-        # 空文件判断
         if file.size == 0:
             st.warning("⚠️ 你上传的是空文件，请选择非空的 txt/docx 文件！")
         else:
             if st.button("开始上传与处理", type="primary"):
                 with st.spinner("⏳ 文件上传与处理中..."):
-                    # 身份验证
                     token = st.session_state.get("token", "")
                     if not token:
                         st.error("❌ 未登录，请先登录！")
@@ -28,18 +25,17 @@ def render():
                     files = {"file": (file.name, file, file.type)}
 
                     try:
-                        # 发送上传请求
                         res = requests.post(
                             url=f"{API_BASE_URL}/api/upload",
                             headers=headers,
                             files=files,
-                            timeout=60  # 大文件超时时间
+                            timeout=60
                         )
-
-                        # 解析响应
                         data = res.json()
-                        if res.status_code == 200 and data.get("code") == 0:
-                            # 更新文档列表
+
+                        if data.get("code") == 0:
+                            if "docs" not in st.session_state:
+                                st.session_state.docs = []
                             st.session_state.docs.append({
                                 "id": data["data"]["doc_id"],
                                 "name": file.name,

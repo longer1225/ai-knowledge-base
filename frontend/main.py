@@ -1,5 +1,12 @@
+# ==============================================
+# 👇 这四行必须放在最最最顶部！修复路径问题
+# ==============================================
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import streamlit as st
-from config import init_session_state, load_css
+from config.frontend_config import init_session_state, load_css
 from utils.auth_guard import login_guard
 
 # 页面导入（全部拆出去了）

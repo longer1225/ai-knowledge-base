@@ -1,51 +1,43 @@
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header
 from ..schemas import ApiResponse
 from ..service.manage_service import get_user_documents, delete_user_document
 from utils.jwt_util import get_current_user
+from backend.exceptions import BusinessException, UnauthorizedException
+from utils.logger import logger
 
 router = APIRouter()
 
-# 获取文档列表
+
+# 抽取通用用户解析方法
+def get_current_user_id(authorization):
+    if not authorization:
+        raise UnauthorizedException()
+    try:
+        token = authorization.split(" ")[1]
+        user = get_current_user(token)
+        return user["user_id"]
+    except Exception:
+        raise UnauthorizedException("登录已过期，请重新登录")
+
+
 @router.get("/api/manage", response_model=ApiResponse)
 def get_documents(authorization: str = Header(None)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="未提供token")
-
-    try:
-        token = authorization.split(" ")[1]
-        user = get_current_user(token)
-
-        # ======================================
-        # 🔥 调试：打印出整个用户信息！！！
-        print("🔥 解析出来的用户：", user)
-        # =====================================
-
-
-        user_id = user["user_id"]
-
-    except:
-        raise HTTPException(status_code=401, detail="token无效")
-
+    logger.info("[API] 获取用户文档列表")
+    user_id = get_current_user_id(authorization)
     docs = get_user_documents(user_id)
-    return ApiResponse(code=0, data=docs)
+    logger.info(f"[API] 用户 {user_id} 获取文档成功，数量：{len(docs)}")
+    return ApiResponse(code=0, data=docs, msg="获取成功")
 
-# 删除文档
-# manage_api.py 优化后
+
 @router.delete("/api/manage/{doc_id}", response_model=ApiResponse)
 def delete_document(doc_id: int, authorization: str = Header(None)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="未提供token")
-
-    try:
-        token = authorization.split(" ")[1]
-        user = get_current_user(token)
-        user_id = user["user_id"]
-    except:
-        raise HTTPException(status_code=401, detail="token无效")
+    logger.info(f"[API] 删除文档，doc_id={doc_id}")
+    user_id = get_current_user_id(authorization)
 
     try:
         delete_user_document(doc_id, user_id)
+        logger.warning(f"[API] 用户 {user_id} 删除文档 {doc_id} 成功")
         return ApiResponse(code=0, msg="删除成功")
     except ValueError as e:
-        # 捕获Service层的异常，返回400错误
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"[API] 删除文档失败：{str(e)}")
+        raise BusinessException(msg=str(e), code=400)

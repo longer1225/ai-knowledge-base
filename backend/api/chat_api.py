@@ -1,0 +1,77 @@
+from fastapi import APIRouter, Header, Body  # 加 Body
+from utils.logger import logger
+from ..schemas import ApiResponse
+from backend.service.chat_service import create_new_chat, list_user_chats
+from utils.jwt_util import get_user_id_from_token
+from backend.exceptions import UnauthorizedException
+
+from ..mapper.chat_mapper import delete_chat_by_id, delete_qa_history_by_chat
+
+router = APIRouter()
+
+
+# 获取对话列表
+@router.get("/api/chat/list", response_model=ApiResponse)
+def get_chat_list(authorization: str = Header(None)):
+    logger.info("=== 获取用户对话列表 ===")
+    if not authorization:
+        raise UnauthorizedException()
+    user_id = get_user_id_from_token(authorization)
+    logger.info(f"用户 {user_id} 获取对话列表")
+    chats = list_user_chats(user_id)
+    return ApiResponse(code=0, data={
+        "chats": [
+            {
+                "chat_id": c.chat_id,
+                "title": c.title,
+                "create_time": c.create_time
+            } for c in chats
+        ]
+    })
+
+
+# 新建对话
+@router.post("/api/chat/new", response_model=ApiResponse)
+def create_chat(authorization: str = Header(None)):
+    logger.info("=== 新建对话 ===")
+    if not authorization:
+        raise UnauthorizedException()
+    user_id = get_user_id_from_token(authorization)
+    chat = create_new_chat(user_id)
+    logger.info(f"用户 {user_id} 新建对话成功，chat_id = {chat.chat_id}")
+    return ApiResponse(code=0, data={"chat_id": chat.chat_id})
+
+
+# 删除对话
+@router.delete("/api/chat/delete/{chat_id}", response_model=ApiResponse)
+def delete_chat(chat_id: int, authorization: str = Header(None)):
+    logger.info(f"=== 删除对话：chat_id = {chat_id} ===")
+    if not authorization:
+        raise UnauthorizedException()
+    user_id = get_user_id_from_token(authorization)
+    logger.info(f"用户 {user_id} 申请删除对话 {chat_id}")
+
+    delete_chat_by_id(chat_id, user_id)
+    delete_qa_history_by_chat(chat_id, user_id)
+
+    logger.info(f"对话 {chat_id} 删除成功")
+    return ApiResponse(code=0, msg="删除成功")
+
+
+# 重命名对话（✅ 修复 422 错误）
+@router.post("/api/chat/rename/{chat_id}", response_model=ApiResponse)
+def rename_chat(
+    chat_id: int,
+    title: str = Body(..., embed=True),  # 👈 修复在这里！
+    authorization: str = Header(None)
+):
+    logger.info(f"=== 对话重命名：chat_id={chat_id}, 新标题={title} ===")
+    if not authorization:
+        raise UnauthorizedException()
+    user_id = get_user_id_from_token(authorization)
+
+    from ..mapper.chat_mapper import update_chat_title
+    update_chat_title(chat_id, user_id, title)
+
+    logger.info(f"用户 {user_id} 重命名成功 → {title}")
+    return ApiResponse(code=0, msg="重命名成功")

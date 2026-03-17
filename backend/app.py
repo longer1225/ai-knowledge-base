@@ -3,6 +3,7 @@ from starlette.middleware.cors import CORSMiddleware
 from backend.api import user_api, upload_api, qa_api, manage_api, history_api
 from backend.interceptor.auth_interceptor import auth_interceptor
 from backend.interceptor.exception_handler import global_exception_handler
+from backend.api import chat_api
 
 # ✅ 统一使用新配置
 from config.backend_base_settings import BACKEND_CONFIG
@@ -32,6 +33,7 @@ app.include_router(upload_api.router)
 app.include_router(qa_api.router)
 app.include_router(history_api.router)
 app.include_router(manage_api.router)
+app.include_router(chat_api.router)
 
 # 健康检查
 @app.get("/")

@@ -15,8 +15,8 @@ COMPLETED_DIR = AUTO_UPLOAD_DIR / "completed"
 AUTO_UPLOAD_DIR.mkdir(exist_ok=True)
 COMPLETED_DIR.mkdir(exist_ok=True)
 
-# 支持的格式
-ALLOWED_TYPES = {"txt", "md", "pdf"}
+# 支持的格式 👇 这里改成 6 种！
+ALLOWED_TYPES = {"txt", "md", "docx", "pdf", "csv", "pptx"}
 
 
 def process_file(file_path: Path, user_id: int = 1):

@@ -3,16 +3,37 @@
 # ==============================================
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import streamlit as st
-from config.frontend_config import init_session_state, load_css
-from utils.auth_guard import login_guard
-from utils.logger import logger
+
+# ======================
+# 🔥 强制初始化 session_state（彻底解决报错！）
+# ======================
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "登录"
+
+if "login_user" not in st.session_state:
+    st.session_state.login_user = None
+
+if "token" not in st.session_state:
+    st.session_state.token = None
+
+if "chat_id" not in st.session_state:
+    st.session_state.chat_id = None
+
+# ======================
+# 正确导入（全部修复）
+# ======================
+from backend.utils.auth_guard import login_guard
+from backend.utils.logger import logger
+from frontend.frontend_config import init_session_state, load_css
 
 # 页面导入
 from frontend.auth_pages import render_login_page, render_register_page
 
+# 初始化
 init_session_state()
 load_css()
 
@@ -50,7 +71,7 @@ def render_sidebar():
 
         # 新聊天
         if st.button("💬 新聊天", key="sidebar_new_chat", use_container_width=True):
-            from utils.request_util import req_post
+            from frontend.request_util import req_post
             try:
                 res = req_post("/api/chat/new", {})
                 if res and res.get("code") == 0:
@@ -74,7 +95,7 @@ def render_sidebar():
 
         if st.session_state.get("token"):
             try:
-                from utils.request_util import req_get, req_post
+                from frontend.request_util import req_get, req_post, req_delete
                 res = req_get("/api/chat/list")
                 if res and res.get("code") == 0:
                     chat_list = res["data"]["chats"]
@@ -93,25 +114,20 @@ def render_sidebar():
                                     st.session_state.current_page = "智能问答"
                                     st.rerun()
                             with col2:
-                                # 触发编辑
                                 if st.button("✏️", key=f"edit_btn_{cid}", use_container_width=True):
                                     st.session_state["editing_id"] = cid
 
-                            # 真正能修改成功的输入框（关键在这里！）
                             if st.session_state.get("editing_id") == cid:
                                 new_name = st.text_input("新标题", key=f"new_name_{cid}")
-                                # 用 form 确保值能提交！！！
                                 with st.form(key=f"form_{cid}"):
                                     submit = st.form_submit_button("✅ 保存")
                                     if submit and new_name:
-                                        # 🔥 这里才是真正能发成功的！
                                         req_post(f"/api/chat/rename/{cid}", {"title": new_name})
                                         st.session_state["editing_id"] = None
                                         st.rerun()
 
                             with col3:
                                 if st.button("🗑️", key=f"del_{cid}", use_container_width=True):
-                                    from utils.request_util import req_delete
                                     res_del = req_delete(f"/api/chat/delete/{cid}")
                                     if res_del and res_del.get("code") == 0:
                                         if st.session_state.chat_id == cid:
@@ -148,7 +164,7 @@ def render_manage_page():
 # ====================== 路由 ======================
 def main():
     render_top_right_user_info()
-    render_sidebar()  # 侧边栏只在这里跑一次
+    render_sidebar()
     page = st.session_state.current_page
 
     if page == "智能问答":

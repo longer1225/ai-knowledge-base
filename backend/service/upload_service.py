@@ -3,12 +3,12 @@ import tempfile
 from fastapi import UploadFile
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from ..models import DocumentChunk
-from backend.embedding.factory import EmbeddingFactory
-from config.backend_base_settings import TEXT_SPLIT_CONFIG, EMBEDDING_CONFIG
+from backend.config import TEXT_SPLIT_CONFIG
+from backend.core.exceptions import ParamException
 from backend.mapper.document_mapper import insert_document, batch_insert_chunks
-from utils.logger import logger
-from backend.exceptions import ParamException
+from backend.models.document_chunk import DocumentChunk
+from backend.utils.embedding_util import get_embedding
+from backend.utils.logger import logger
 
 # 分块器
 text_splitter = RecursiveCharacterTextSplitter(
@@ -18,7 +18,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 
 # 向量模型
-embedding = EmbeddingFactory.get(**EMBEDDING_CONFIG)
+embedding = get_embedding()
 
 # ------------------------------
 # 支持格式：txt、md、docx、pdf、csv、pptx

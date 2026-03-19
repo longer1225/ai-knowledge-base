@@ -1,11 +1,11 @@
+from ..core.exceptions import ParamException
 from ..mapper.history_mapper import (
     get_history_by_user_id,
     get_history_by_chat_id,
     insert_history,
     delete_history_by_user_id
 )
-from backend.exceptions import ParamException
-from utils.logger import logger
+from ..utils.logger import logger
 
 
 def get_user_qa_history(user_id: int):

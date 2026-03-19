@@ -14,6 +14,13 @@ EMBEDDING_CONFIG["dimension"] = 768  # 智谱模型维度是768，覆盖base的3
 EMBEDDING_CONFIG["api_key"] = "你的智谱AI API Key"  # 上线时替换为真实Key
 EMBEDDING_CONFIG["base_url"] = "https://open.bigmodel.cn/api/paas/v4/"  # 智谱接口地址
 
+
+# ===================== 生产环境LLM配置 =====================
+LLM_CONFIG["model_type"] = "online"  # 生产用在线模型
+LLM_CONFIG["model_name"] = "glm-4"  # 智谱GLM-4模型
+LLM_CONFIG["api_key"] = "你的智谱AI API Key"  # 替换为真实Key
+LLM_CONFIG["base_url"] = "https://open.bigmodel.cn/api/paas/v4/"  # 智谱接口地址
+
 # config/backend_prod_settings.py
 from .backend_base_settings import *
 

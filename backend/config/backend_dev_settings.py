@@ -13,6 +13,11 @@ EMBEDDING_CONFIG["model_name"] = "all-MiniLM-L6-v2"  # 轻量开源模型
 # dimension继承base的384，不用改
 # api_key继承base的空值，不用改
 
+# ===================== 开发环境LLM配置 =====================
+LLM_CONFIG["model_type"] = "mock"  # 开发用假模型/本地开源模型
+LLM_CONFIG["model_name"] = "fake-llm"  # 标记为假模型
+LLM_CONFIG["local_model_path"] = "./models/llm/ollama_qwen2"  # 本地Ollama模型路径（可选）
+
 # config/backend_dev_settings.py
 from .backend_base_settings import *
 

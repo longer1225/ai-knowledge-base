@@ -1,6 +1,8 @@
 from jose import jwt, JWTError
 from fastapi import HTTPException, status
-from config.backend_base_settings import SECRET_KEY, ALGORITHM
+
+from backend.config import SECRET_KEY, ALGORITHM
+
 
 def get_current_user(token: str):
     try:

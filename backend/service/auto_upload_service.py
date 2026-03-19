@@ -2,9 +2,11 @@ import os
 import time
 import threading
 from pathlib import Path
-from utils.logger import logger
+
 from backend.service.upload_service import upload_document
 from fastapi import UploadFile
+
+from backend.utils.logger import logger
 
 # 配置目录
 BASE_DIR = Path(__file__).parent.parent.parent

@@ -1,6 +1,6 @@
-from ..models import QAHistory
-from utils.db_util import db_connection
-from utils.logger import logger
+from backend.models.qa_history import QAHistory
+from backend.utils.db_util import db_connection
+from backend.utils.logger import logger
 
 
 # 根据【窗口ID】查询历史

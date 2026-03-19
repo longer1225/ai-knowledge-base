@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Header, Body
-from ..schemas import ApiResponse
+from ..schemas.api_response import ApiResponse
 from ..service.history_service import (
     get_user_qa_history,
     get_qa_history_by_chat,
     save_qa_history,
     clear_user_qa_history
 )
-from utils.jwt_util import get_current_user
-from backend.exceptions import BusinessException
-from utils.logger import logger
+from backend.utils.jwt_util import get_current_user
+from backend.core.exceptions import BusinessException
+from backend.utils.logger import logger
 
 router = APIRouter()
 

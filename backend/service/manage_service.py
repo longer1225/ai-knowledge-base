@@ -1,5 +1,5 @@
 from backend.mapper.document_mapper import list_user_documents, delete_document
-from utils.logger import logger
+from backend.utils.logger import logger
 
 
 def get_user_documents(user_id: int):

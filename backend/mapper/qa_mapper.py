@@ -1,6 +1,7 @@
-from ..models import QAHistory, DocumentChunk
-from utils.db_util import db_connection
-from utils.logger import logger
+from backend.models.document_chunk import DocumentChunk
+from backend.models.qa_history import QAHistory
+from backend.utils.db_util import db_connection
+from backend.utils.logger import logger
 
 
 # ====================== 【原有必备功能】全部保留 ======================

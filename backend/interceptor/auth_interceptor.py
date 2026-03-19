@@ -1,5 +1,5 @@
 from fastapi import Request, HTTPException
-from utils.jwt_util import get_current_user
+from backend.utils.jwt_util import get_current_user
 WHITE_LIST = [
     "/api/user/login",
     "/api/user/register",

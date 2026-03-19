@@ -1,9 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, Request
-from ..schemas import ApiResponse
+from backend.schemas.api_response import ApiResponse
 from ..service.upload_service import upload_document
-from utils.jwt_util import get_current_user
-from backend.exceptions import BusinessException, UnauthorizedException, ParamException
-from utils.logger import logger
+from backend.utils.jwt_util import get_current_user
+from backend.core.exceptions import BusinessException, UnauthorizedException
+from backend.utils.logger import logger
 
 router = APIRouter()
 

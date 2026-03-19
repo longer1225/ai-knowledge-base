@@ -1,6 +1,7 @@
-from backend.models import User
-from utils.db_util import db_connection
-from utils.logger import logger
+from backend.models.user import User
+from backend.utils.db_util import db_connection
+from backend.utils.logger import logger
+
 
 @db_connection
 def get_user_by_username(username: str, db=None):

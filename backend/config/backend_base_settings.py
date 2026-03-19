@@ -32,14 +32,29 @@ SECRET_KEY = "1234567890abcdefghijklmnopqrstuvwxyz"
 ALGORITHM = "HS256"
 
 # 嵌入模型基础配置（只留通用字段，环境特有字段在dev/prod里加）
+# 嵌入模型基础配置
 EMBEDDING_CONFIG = {
-    "dimension": 384,  # 通用维度
-    "api_key": "",     # 通用默认值
+    "model_type": "",      # mock / online
+    "model_name": "",
+    "dimension": 384,
+    "api_key": "",
+    "base_url": ""
 }
 
-# config/backend_base_settings.py
-# 原有配置不变，新增历史记录配置
+# LLM 大模型基础配置
+LLM_CONFIG = {
+    "model_type": "",      # mock / ollama / zhipu / qwen
+    "model_name": "",
+    "temperature": 0.1,
+    "max_tokens": 2048,
+    "api_key": "",
+    "base_url": ""
+}
+
+TOP_K = 3  # 最佳匹配条数，以后这里改就行
+
+# 历史记录配置
 HISTORY_CONFIG = {
-    "keep_test_data": True,  # 通用默认值，开发/生产再覆盖
-    "test_user_id": 0        # 测试用户ID（生产环境过滤该用户的记录）
+    "keep_test_data": True,
+    "test_user_id": 0
 }

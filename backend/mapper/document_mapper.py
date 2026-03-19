@@ -1,6 +1,7 @@
-from backend.models import Document, DocumentChunk
-from utils.db_util import db_connection
-from utils.logger import logger
+from backend.models.document import Document
+from backend.models.document_chunk import DocumentChunk
+from backend.utils.db_util import db_connection
+from backend.utils.logger import logger
 
 
 # ======================

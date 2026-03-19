@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
 from datetime import datetime
-from config.backend_base_settings import API_BASE_URL
+
+from backend.config import API_BASE_URL
 
 
 def render():

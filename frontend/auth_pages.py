@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-from config.backend_base_settings import API_BASE_URL
+from backend.config.backend_base_settings import API_BASE_URL
 
 def render_login_page():
     _, center_col, _ = st.columns([1, 1.5, 1])

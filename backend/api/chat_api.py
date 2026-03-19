@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Header, Body  # 加 Body
-from utils.logger import logger
-from ..schemas import ApiResponse
+from backend.utils.logger import logger
+from backend.schemas.api_response import ApiResponse
 from backend.service.chat_service import create_new_chat, list_user_chats
-from utils.jwt_util import get_user_id_from_token
-from backend.exceptions import UnauthorizedException
+from backend.utils.jwt_util import get_user_id_from_token
+from backend.core.exceptions import UnauthorizedException
 
 from ..mapper.chat_mapper import delete_chat_by_id, delete_qa_history_by_chat
 

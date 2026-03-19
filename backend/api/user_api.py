@@ -3,10 +3,10 @@ from pydantic import BaseModel
 from backend.service.user_service import create_user, authenticate_user
 from datetime import datetime, timedelta
 from jose import jwt
-from config.backend_base_settings import SECRET_KEY, ALGORITHM
-from ..schemas import ApiResponse
-from backend.exceptions import BusinessException, UnauthorizedException, ParamException
-from utils.logger import logger
+from backend.config.backend_base_settings import SECRET_KEY, ALGORITHM
+from ..schemas.api_response import ApiResponse
+from backend.core.exceptions import BusinessException, UnauthorizedException, ParamException
+from backend.utils.logger import logger
 
 router = APIRouter(prefix="/api/user", tags=["用户管理"])
 

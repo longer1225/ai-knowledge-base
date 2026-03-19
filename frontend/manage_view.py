@@ -1,5 +1,7 @@
 import streamlit as st
-from utils.request_util import req_get, req_delete
+
+from frontend.request_util import req_get
+
 
 def load_documents():
     try:

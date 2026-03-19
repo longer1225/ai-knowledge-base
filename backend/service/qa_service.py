@@ -1,54 +1,104 @@
-import numpy as np
 import json
-from backend.embedding.factory import EmbeddingFactory
-# ✅ 改用新配置
-from config.backend_base_settings import EMBEDDING_CONFIG, ENV_MODE
+from typing import AsyncGenerator
+
+# 适配器
+from backend.adapter.langchain.embedding_adapter import LangChainEmbeddingAdapter
+from backend.adapter.langchain.llm_adapter import LangChainLLMAdapter
+
+# 配置 & 工具
+from backend.config.backend_base_settings import ENV_MODE, TOP_K
 from backend.mapper.qa_mapper import list_all_document_chunks, insert_qa_history
-from utils.logger import logger
-from backend.exceptions import ParamException
+from backend.utils.logger import logger
+from backend.core.exceptions import ParamException
 
-embedding = EmbeddingFactory.get(**EMBEDDING_CONFIG)
+# 模型工具
+from backend.utils.embedding_util import get_embedding
+from backend.utils.llm_util import get_llm
 
-def ask_question(question: str, user_id: int):
+# LangChain
+from langchain.vectorstores import FAISS
+from langchain.schema import Document
+from langchain.prompts import PromptTemplate
+from langchain.chains import RetrievalQA
+
+
+# 函数签名变成异步生成器（支持流式）
+async def ask_question_stream(question: str, user_id: int) -> AsyncGenerator[str, None]:
     if not question or not question.strip():
         raise ParamException("问题不能为空")
 
     logger.debug(f"[Service] 用户 {user_id} 提问：{question}")
 
-    # 开发环境直接返回
+    # 开发模式
     if ENV_MODE == "dev":
-        answer = "⚠️【开发模式】模型未加载，仅用于接口测试"
-        source = ""
-        insert_qa_history(user_id, question, answer, source, "")
-        return answer, source
+        yield "⚠️【开发模式】模型未加载，仅用于接口测试"
+        insert_qa_history(user_id, question, "开发模式回复", "", "")
+        return
 
-    # 生产环境逻辑
-    query_emb = embedding.embed(question)
-    chunks = list_all_document_chunks()
+    try:
+        embedding = get_embedding()
+        llm = get_llm()
 
-    scored = []
-    for chunk in chunks:
-        vec = np.array(chunk.chunk_embedding)
-        score = np.dot(vec, query_emb) / (np.linalg.norm(vec) * np.linalg.norm(query_emb))
-        scored.append((chunk, round(float(score), 4)))
+        lc_embedding = LangChainEmbeddingAdapter(embedding)
+        lc_llm = LangChainLLMAdapter(llm=llm)
 
-    scored.sort(key=lambda x: x[1], reverse=True)
-    top_chunks = scored[:3]
+        chunks = list_all_document_chunks()
+        documents = [
+            Document(page_content=c.chunk_text, metadata={"chunk_id": c.chunk_id})
+            for c in chunks
+        ]
 
-    context = "\n---\n".join([c.chunk_text for c, s in top_chunks])
-    answer = f"基于知识库：\n{context[:400]}"
+        db = FAISS.from_documents(documents, lc_embedding)
 
-    source = json.dumps([
-        {"chunk_id": c.chunk_id, "text": c.chunk_text[:100]+"...", "score": s}
-        for c, s in top_chunks
-    ])
+        # ====================== 从配置读取 TOP_K ======================
+        retriever = db.as_retriever(search_kwargs={"k": TOP_K})
 
-    insert_qa_history(
-        user_id=user_id,
-        question=question,
-        answer=answer,
-        source_chunks=source,
-        similarity_scores=json.dumps([s for _, s in top_chunks])
-    )
+        prompt = PromptTemplate(
+            template="""根据上下文回答问题，不要编造答案。
+上下文：
+{context}
 
-    return answer, source
+用户问题：{question}
+回答：""",
+            input_variables=["context", "question"]
+        )
+
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=lc_llm,
+            chain_type="stuff",
+            retriever=retriever,
+            chain_type_kwargs={"prompt": prompt},
+            return_source_documents=True
+        )
+
+        # ====================== 流式输出 ======================
+        full_answer = ""
+        for token in qa_chain.stream({"query": question}):
+            if "result" in token:
+                content = token["result"]
+                full_answer += content
+                yield content
+
+        # ====================== 最后保存历史（不变） ======================
+        source_docs = retriever.get_relevant_documents(question)
+        source = json.dumps([
+            {
+                "chunk_id": doc.metadata["chunk_id"],
+                "text": doc.page_content[:100] + "...",
+                "score": 0.0
+            } for doc in source_docs
+        ], ensure_ascii=False)
+
+        similarity_scores = json.dumps([0.0] * len(source_docs))
+
+        insert_qa_history(
+            user_id=user_id,
+            question=question,
+            answer=full_answer,
+            source_chunks=source,
+            similarity_scores=similarity_scores
+        )
+
+    except Exception as e:
+        logger.error(f"[Service] 流式问答失败：{e}", exc_info=True)
+        yield "【服务出错】"

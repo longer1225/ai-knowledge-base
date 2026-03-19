@@ -1,5 +1,8 @@
-from backend.database import SessionLocal
+
 from functools import wraps
+
+from backend.core.database import SessionLocal
+
 
 def db_connection(func):
     """

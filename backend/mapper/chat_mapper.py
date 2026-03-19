@@ -1,6 +1,7 @@
-from backend.models import Chat, QAHistory
-from utils.db_util import db_connection
-from utils.logger import logger
+from backend.models.chat import Chat
+from backend.models.qa_history import QAHistory
+from backend.utils.db_util import db_connection
+from backend.utils.logger import logger
 
 
 # 创建新对话

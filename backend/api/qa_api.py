@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Header, Body
-from ..schemas import ApiResponse, QAQuery
-from ..service.qa_service import ask_question
-from utils.jwt_util import get_current_user
-from backend.exceptions import BusinessException, UnauthorizedException
-from utils.logger import logger
+from fastapi import APIRouter, Header
+from starlette.responses import StreamingResponse, JSONResponse
+
+from backend.schemas.qa_query import QAQuery
+from ..service.qa_service import ask_question_stream
+from backend.utils.jwt_util import get_current_user
+from backend.core.exceptions import UnauthorizedException
+from backend.utils.logger import logger
+
+# 🔥 导入配置，获取当前环境
+from backend.config.backend_base_settings import BACKEND_CONFIG
 
 router = APIRouter()
 
@@ -19,18 +24,23 @@ def get_current_user_id(authorization):
         raise UnauthorizedException("token无效或已过期")
 
 
-@router.post("/api/qa/ask", response_model=ApiResponse)
+
+@router.post("/api/qa/ask",response_class=StreamingResponse )
 def qa_ask(
-        query: QAQuery,
-        authorization: str = Header(None)
+    query: QAQuery,
+    authorization: str = Header(None)
 ):
     logger.info("[API] 收到问答请求：%s", query.question)
     user_id = get_current_user_id(authorization)
 
-    answer, source = ask_question(query.question, user_id)
-    logger.info("[API] 用户 %s 问答完成", user_id)
+    # 🔥 🔥 🔥 强制打印当前环境（看后端控制台！）
+    logger.info(f"【DEBUG】当前环境：{BACKEND_CONFIG.env}")
 
-    return ApiResponse(code=0, data={
-        "answer": answer,
-        "source": source
-    })
+    if BACKEND_CONFIG.env == "dev":
+        # 🟢 开发模式
+        logger.info("【DEBUG】进入 DEV 模式，返回 JSON")
+        return JSONResponse(...)
+    else:
+        # 🚀 生产模式
+        logger.info("【DEBUG】进入 PROD 模式，返回流式")
+        return StreamingResponse(...)

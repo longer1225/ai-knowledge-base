@@ -1,7 +1,8 @@
 # utils/logger.py
 import logging
 import sys
-from config.backend_base_settings import ENV_MODE
+
+from backend.config import ENV_MODE
 
 
 def get_logger(name: str = "ai_knowledge_base"):

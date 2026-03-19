@@ -1,8 +1,8 @@
 import os
 import tempfile
 from fastapi import UploadFile
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from backend.config import TEXT_SPLIT_CONFIG
 from backend.core.exceptions import ParamException
 from backend.mapper.document_mapper import insert_document, batch_insert_chunks
@@ -14,16 +14,14 @@ from backend.utils.logger import logger
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=TEXT_SPLIT_CONFIG["chunk_size"],
     chunk_overlap=TEXT_SPLIT_CONFIG["chunk_overlap"],
-    separators=["\n\n", "\n", "。", "！", "？", ".", "!", "?"]
+    separators=["\n\n", "\n", "。", "！", "？", ".", "!", "?", "；", ";", "，", ","]
 )
 
-# 向量模型
-embedding = get_embedding()
-
 # ------------------------------
-# 支持格式：txt、md、docx、pdf、csv、pptx
+# 支持格式
 # ------------------------------
 ALLOWED_SUFFIX = [".txt", ".md", ".docx", ".pdf", ".csv", ".pptx"]
+
 
 def upload_document(file: UploadFile, user_id: int):
     logger.info("[Service] 开始处理用户 %s 的文件：%s", user_id, file.filename)
@@ -37,34 +35,28 @@ def upload_document(file: UploadFile, user_id: int):
         tmp_path = tmp.name
 
     try:
-        # ==========================================
-        # 【核心：不同文件 → 不同读取 → 最终都是文本】
-        # ==========================================
         content = ""
 
-        # 1. TXT
-        if suffix == ".txt":
+        # ======================
+        # 解析文件
+        # ======================
+
+        if suffix in [".txt", ".md"]:
             with open(tmp_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
-        # 2. MD
-        elif suffix == ".md":
-            with open(tmp_path, "r", encoding="utf-8", errors="ignore") as f:
-                content = f.read()
-
-        # 3. DOCX
         elif suffix == ".docx":
             from docx import Document
             doc = Document(tmp_path)
             content = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
 
-        # 4. PDF
         elif suffix == ".pdf":
             from PyPDF2 import PdfReader
             reader = PdfReader(tmp_path)
-            content = "\n".join([page.extract_text() for page in reader.pages])
+            content = "\n".join([
+                page.extract_text() or "" for page in reader.pages  # ✅ 防 None
+            ])
 
-        # 5. CSV
         elif suffix == ".csv":
             import csv
             rows = []
@@ -74,25 +66,28 @@ def upload_document(file: UploadFile, user_id: int):
                     rows.append(" | ".join(row))
             content = "\n".join(rows)
 
-        # 6. PPTX
         elif suffix == ".pptx":
             from pptx import Presentation
             prs = Presentation(tmp_path)
-            content = ""
+            texts = []
             for slide in prs.slides:
                 for shape in slide.shapes:
                     if hasattr(shape, "text"):
-                        content += shape.text + "\n"
+                        texts.append(shape.text)
+            content = "\n".join(texts)
 
         if not content.strip():
             raise ParamException("文件内容为空或无法提取文本")
 
-        # ==========================================
-        # 以下逻辑：分块、向量、入库 → 全部统一！
-        # ==========================================
+        # ======================
+        # 分块
+        # ======================
         chunks = text_splitter.split_text(content)
         logger.debug("[Service] 文件分块完成，共 %s 块", len(chunks))
 
+        # ======================
+        # 插入文档
+        # ======================
         doc = insert_document(
             user_id=user_id,
             doc_name=file.filename,
@@ -100,9 +95,16 @@ def upload_document(file: UploadFile, user_id: int):
             file_size=os.path.getsize(tmp_path)
         )
 
+        # ======================
+        # embedding（批量优化）
+        # ======================
+        embedding = get_embedding()
+
+        # 🔥 批量算 embedding（关键优化）
+        vectors = embedding.embed_documents(chunks)
+
         chunk_items = []
-        for idx, text in enumerate(chunks):
-            vec = embedding.embed(text)
+        for idx, (text, vec) in enumerate(zip(chunks, vectors)):
             chunk_items.append(DocumentChunk(
                 doc_id=doc.doc_id,
                 chunk_text=text,
@@ -111,6 +113,7 @@ def upload_document(file: UploadFile, user_id: int):
             ))
 
         batch_insert_chunks(chunk_items)
+
         logger.info("[Service] 文档处理完成，doc_id=%s", doc.doc_id)
         return doc.doc_id
 

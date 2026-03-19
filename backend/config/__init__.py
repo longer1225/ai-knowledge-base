@@ -1,11 +1,15 @@
-# config/__init__.py
-import os
+# 🔥 保留你原来所有逻辑！
+# 🔥 只调整导入顺序！
+# 🔥 不写死！不破坏！
 
-# 读取环境变量，默认用开发环境（改环境只需改启动命令，不用改代码）
-env = os.getenv("AI_ENV", "dev")
+# 1. 先导入 base（但不提取 ENV_MODE）
+from . import backend_base_settings
 
-# 加载对应环境的配置
-if env == "prod":
+# 2. 读取 base 里的环境变量
+ENV_MODE = backend_base_settings.ENV_MODE
+
+# 3. 根据环境加载配置
+if ENV_MODE == "prod":
     from .backend_prod_settings import *
 else:
     from .backend_dev_settings import *

@@ -1,5 +1,6 @@
-from langchain.embeddings.base import Embeddings
+from langchain_core.embeddings import Embeddings
 from backend.embedding.base import BaseEmbedding
+
 
 class LangChainEmbeddingAdapter(Embeddings):
     def __init__(self, embedding: BaseEmbedding):
@@ -9,4 +10,5 @@ class LangChainEmbeddingAdapter(Embeddings):
         return self.embedding.embed(text)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return [self.embedding.embed(t) for t in texts]
+        # ✅ 批量调用（性能关键）
+        return self.embedding.embed_documents(texts)

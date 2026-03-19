@@ -1,9 +1,12 @@
-from langchain.llms.base import LLM
+from langchain_core.language_models.llms import LLM
 from backend.llm.base import BaseLLM
 from typing import Optional
 
+
 class LangChainLLMAdapter(LLM):
-    llm: BaseLLM
+    def __init__(self, llm: BaseLLM):
+        super().__init__()
+        self.llm = llm
 
     def _call(self, prompt: str, stop: Optional[list] = None) -> str:
         return self.llm.generate(prompt)

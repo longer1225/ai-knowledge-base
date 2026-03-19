@@ -2,7 +2,6 @@
 from .backend_base_settings import *  # 导入base的所有配置
 
 # ===================== 开发环境特有配置 =====================
-ENV_MODE = "dev"
 
 # 开发模式：开启热重载
 BACKEND_CONFIG["reload"] = True

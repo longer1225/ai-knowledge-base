@@ -1,6 +1,6 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from backend.config import ENV_MODE
+from backend.config.backend_base_settings import ENV_MODE
 from backend.core.exceptions import BusinessException
 
 async def global_exception_handler(request: Request, exc: Exception):

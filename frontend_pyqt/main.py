@@ -94,6 +94,7 @@ class MainWindow(QMainWindow):
                 font-size: 15px !important;
                 border: 1px solid #FFFFFF !important;
                 padding: 5px 15px; /* 加一点内边距，防止文字贴边 */
+                text-align: center;   /* 🔥关键 */
             }
             QPushButton#sendBtn:hover { 
                 background-color: #D0D0D0 !important;

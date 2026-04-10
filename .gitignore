@@ -1,18 +1,22 @@
-# Python 缓存
+# Python 编译缓存
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Python 环境/包
 .Python
 env/
-build/
+.venv/
+venv/
+ENV/
+lib/
+lib64/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -20,25 +24,18 @@ var/
 .installed.cfg
 *.egg
 
-# 虚拟环境
-.venv/
-venv/
-ENV/
-
-# PyInstaller 打包产物（绝对不上传）
+# PyInstaller 打包产物（重要！）
 build/
 dist/
 *.exe
 *.spec
 
-# 日志
+# 日志与环境变量
 *.log
-
-# 环境变量
 .env
 .env.local
 
-# 系统文件
+# 系统/编辑器文件
 .DS_Store
 .idea/
 .vscode/

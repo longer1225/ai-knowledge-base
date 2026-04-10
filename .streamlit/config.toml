@@ -1,0 +1,11 @@
+[theme]
+# 设置为暗色模式基底
+base="dark"
+
+# 🌟 终极杀招：把 Streamlit 默认的主题红，强行改成纯白色
+primaryColor="#FFFFFF"
+
+# 顺便把背景色统一下，防止闪烁
+backgroundColor="#212121"
+secondaryBackgroundColor="#171717"
+textColor="#ECECEC"

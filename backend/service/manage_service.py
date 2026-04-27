@@ -1,7 +1,7 @@
 from backend.mapper.document_mapper import list_user_documents, delete_document
 from backend.utils.logger import logger
 from backend.utils.redis_cache import redis_cache
-
+from backend.utils.log_util import insert_operation_log  # 加这里
 
 # ==========================
 # 获取用户文档列表
@@ -45,5 +45,14 @@ def delete_user_document(doc_id: int, user_id: int):
 
     # 清理全局缓存
     redis_cache.delete("rag:all_chunks")
+    # ======================
+    # 文档删除日志
+    # ======================
+    insert_operation_log(
+        user_id=user_id,
+        operation="文档删除",
+        module="文档知识库",
+        content=f"删除文档ID：{doc_id}"
+    )
 
     return is_deleted

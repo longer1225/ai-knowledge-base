@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 import json
-
+from backend.utils.log_util import insert_operation_log
 from backend.core.exceptions import BusinessException
 from backend.mapper.user_mapper import get_user_by_username, create_mapper_user
 from backend.utils.logger import logger
@@ -52,6 +52,15 @@ def authenticate_user(username: str, password: str):
         json.dumps(user_dict, ensure_ascii=False),
         ex=300
     )
+    # ======================
+    # 记录登录日志
+    # ======================
+    insert_operation_log(
+        user_id=user_dict["user_id"],
+        operation="用户登录",
+        module="用户模块",
+        content=f"用户【{username}】登录系统"
+    )
 
     return user_dict  # 直接返回字典
 
@@ -77,5 +86,12 @@ def create_user(username: str, password: str):
     # 清缓存
     cache_key = f"user:info:{username}"
     redis_cache.delete(cache_key)
+
+    insert_operation_log(
+        user_id=user_dict["user_id"],
+        operation="用户注册",
+        module="用户模块",
+        content=f"新用户【{username}】注册"
+    )
 
     return user_dict  # 直接返回字典

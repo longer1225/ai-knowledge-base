@@ -2,7 +2,8 @@ import os
 import tempfile
 import json
 from fastapi import UploadFile
-
+# 就在你这个文件顶部加入这一行
+from backend.utils.log_util import insert_operation_log
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from backend.config import TEXT_SPLIT_CONFIG
 from backend.core.exceptions import ParamException
@@ -196,6 +197,15 @@ def upload_document(file: UploadFile, user_id: int):
             redis_cache.incr("rag:version")
 
         logger.info("[Service] 文档处理完成，doc_id=%s", doc_id)
+        # ======================
+        # 记录：文档上传操作日志
+        # ======================
+        insert_operation_log(
+            user_id=user_id,
+            operation="文档上传",
+            module="文档知识库",
+            content=f"用户上传文件：{file.filename}，文档ID：{doc_id}"
+        )
         return doc_id
 
     finally:

@@ -6,6 +6,7 @@ from ..mapper.history_mapper import (
     delete_history_by_user_id
 )
 from ..utils.logger import logger
+from ..utils.log_util import insert_operation_log  # 加这一行
 
 
 # ==========================
@@ -101,4 +102,14 @@ def save_qa_history(
 def clear_user_qa_history(user_id: int):
     logger.debug(f"[Service] 清空用户 {user_id} QA历史")
     delete_history_by_user_id(user_id)
+    # ======================
+    # 清空历史日志
+    # ======================
+    insert_operation_log(
+        user_id=user_id,
+        operation="清空历史",
+        module="问答历史",
+        content="用户清空了全部问答记录"
+    )
+
     return True

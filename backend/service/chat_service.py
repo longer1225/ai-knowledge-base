@@ -8,6 +8,7 @@ from backend.mapper.chat_mapper import (
 )
 from backend.utils.redis_cache import redis_cache
 import json
+from backend.utils.log_util import insert_operation_log  # 加这一行
 
 # ==========================
 # 🔥 重要：因为 Mapper 已经返回字典，不再需要 chat_to_dict 工具函数！
@@ -22,6 +23,13 @@ def update_chat_title_service(chat_id: int, user_id: int, new_title: str):
     # 清缓存
     redis_cache.delete(f"user:chats:{user_id}")
     redis_cache.delete(f"chat:info:{chat_id}")
+    # 🔥 修改标题日志
+    insert_operation_log(
+        user_id=user_id,
+        operation="修改标题",
+        module="对话管理",
+        content=f"对话 {chat_id} 修改标题为：{new_title}"
+    )
 
     return res
 
@@ -34,6 +42,14 @@ def create_new_chat(user_id: int):
     chat = create_chat(user_id=user_id)
 
     redis_cache.delete(f"user:chats:{user_id}")
+
+    # 🔥 新建对话日志
+    insert_operation_log(
+        user_id=user_id,
+        operation="新建对话",
+        module="对话管理",
+        content=f"创建对话窗口：{chat['chat_id']}"
+    )
 
     return chat  # 直接返回字典
 
@@ -95,6 +111,14 @@ def delete_chat(chat_id: int, user_id: int):
     redis_cache.delete(f"chat:info:{chat_id}")
     redis_cache.delete(f"chat:history:{chat_id}")
 
+    # 🔥 删除对话日志
+    insert_operation_log(
+        user_id=user_id,
+        operation="删除对话",
+        module="对话管理",
+        content=f"删除对话窗口：{chat_id}"
+    )
+
     return res
 
 
@@ -105,5 +129,13 @@ def delete_qa_by_chat(chat_id: int, user_id: int):
     res = delete_qa_history_by_chat(chat_id, user_id)
 
     redis_cache.delete(f"chat:history:{chat_id}")
+
+    # 🔥 删除单窗口历史日志
+    insert_operation_log(
+        user_id=user_id,
+        operation="清空对话记录",
+        module="对话管理",
+        content=f"清空对话 {chat_id} 下的问答记录"
+    )
 
     return res

@@ -9,6 +9,7 @@ from backend.utils.embedding_util import get_embedding
 from backend.utils.llm_util import get_llm
 from backend.utils.llm_prompt_util import generate_chat_title
 from backend.service.chat_service import update_chat_title_service
+from backend.utils.log_util import insert_operation_log  # <-- 加这一行
 
 
 async def ask_question_stream(
@@ -154,6 +155,15 @@ async def ask_question_stream(
             source_chunks=source,
             similarity_scores=similarity_scores,
             chat_id=chat_id
+        )
+        # ======================
+        # AI 问答日志（你要的功能）
+        # ======================
+        insert_operation_log(
+            user_id=user_id,
+            operation="AI 提问",
+            module="智能问答",
+            content=f"用户问题：{question}"
         )
 
     except Exception as e:

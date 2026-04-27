@@ -6,6 +6,7 @@ from pathlib import Path
 from backend.service.upload_service import upload_document
 from fastapi import UploadFile
 from backend.utils.logger import logger
+from backend.utils.log_util import insert_operation_log  # 加这一行
 
 # ==============================
 # 目录配置
@@ -65,6 +66,13 @@ def process_file(file_path: Path, user_id: int = 1):
             doc_id = upload_document(upload_file, user_id)
 
         logger.info(f"[自动上传] 处理完成！doc_id={doc_id} -> {filename}")
+
+        insert_operation_log(
+            user_id=user_id,
+            operation="自动上传文档",
+            module="文档知识库",
+            content=f"自动上传文件：{filename}，文档ID：{doc_id}"
+        )
 
         # ======================
         # 移动到 completed
